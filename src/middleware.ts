@@ -20,7 +20,9 @@ export async function middleware(request: NextRequest) {
             // This avoids Edge Runtime dynamic code evaluation issues with @opennextjs/cloudflare
             const sessionResponse = await fetch(new URL("/api/auth/get-session", request.url), {
                 method: "GET",
+                cache: "no-store",
                 headers: {
+                    "cache-control": "no-store",
                     cookie: request.headers.get("cookie") || "",
                 },
             });

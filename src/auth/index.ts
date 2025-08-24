@@ -11,9 +11,8 @@ async function authBuilder() {
     return betterAuth(
         withCloudflare(
             {
-                autoDetectIpAddress: true,
-                geolocationTracking: true,
-                cf: getCloudflareContext().cf,
+                autoDetectIpAddress: false,
+                geolocationTracking: false,
                 postgres: {
                     db: dbInstance,
                 },
@@ -27,10 +26,10 @@ async function authBuilder() {
                 trustedOrigins: [
                     "http://localhost:*", // Allow all localhost ports
                     "https://localhost:*", // Allow HTTPS localhost
+                    "https://cloudflare-better-auth-example.tjhub.workers.dev"
                 ],
                 rateLimit: {
-                    enabled: true,
-                    // ... other rate limiting options
+                    enabled: false,
                 },
                 plugins: [
                     openAPI(), 
@@ -58,6 +57,56 @@ export async function initAuth() {
         authInstance = await authBuilder();
     }
     return authInstance;
+}
+
+// Build an auth instance per request so we can pass Cloudflare context correctly
+export async function getAuthForRequest() {
+    const dbInstance = await getDb();
+    const { cf } = await getCloudflareContext({ async: true });
+    const cfGeo = cf
+        ? {
+              timezone: cf.timezone,
+              city: cf.city,
+              country: cf.country,
+              region: cf.region,
+              regionCode: cf.regionCode,
+              colo: cf.colo,
+              latitude: cf.latitude,
+              longitude: cf.longitude,
+          }
+        : null;
+
+    return betterAuth(
+        withCloudflare(
+            {
+                autoDetectIpAddress: true,
+                geolocationTracking: true,
+                cf: cfGeo,
+                postgres: { db: dbInstance },
+            },
+            {
+                database: drizzleAdapter(dbInstance, {
+                    provider: "pg",
+                    schema,
+                }),
+                trustedOrigins: [
+                    "http://localhost:*",
+                    "https://localhost:*",
+                ],
+                rateLimit: {
+                    enabled: true,
+                },
+                plugins: [
+                    openAPI(),
+                    emailOTP({
+                        async sendVerificationOTP({ email, otp, type }) {
+                            console.log(`Email OTP for ${email}: ${otp} (type: ${type})`);
+                        },
+                    }),
+                ],
+            }
+        )
+    );
 }
 
 /* ======================================================================= */

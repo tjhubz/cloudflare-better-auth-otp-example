@@ -1,4 +1,8 @@
-import { initAuth } from "@/auth";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+import { getAuthForRequest } from "@/auth";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { headers } from "next/headers";
@@ -9,7 +13,7 @@ import FileUploadDemo from "@/components/FileUploadDemo";
 import { Github, Package, FileText, MapPin, Clock, Globe, Building, Server, Navigation } from "lucide-react";
 
 export default async function DashboardPage() {
-    const authInstance = await initAuth();
+    const authInstance = await getAuthForRequest();
     // Fetch session using next/headers per better-auth docs for server components
     const session = await authInstance.api.getSession({ headers: await headers() });
 
